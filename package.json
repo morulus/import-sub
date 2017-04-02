@@ -1,6 +1,6 @@
 {
   "name": "import-sub",
-  "version": "1.0.0-alfa.1",
+  "version": "1.0.0-beta",
   "description": "Import substituton core",
   "main": "resolve.js",
   "scripts": {
