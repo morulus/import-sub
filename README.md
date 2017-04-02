@@ -68,6 +68,26 @@ By matching two values (`request` and `base`) you can determine exactly what fil
 
 If `request` and `base` are matched to defined value by engine, then instead of origin `request` and `base` it will use same properties from property `use`.
 
+## Options
+
+### `originalResolve`
+
+The path resolver of the native engine. By the default it is `path.resolve`. Keep property default if you are use the import-sub as standalone module.
+
+### `resolve`
+
+Custom resolve function, which will be called with resolved path.
+
+### `root`
+The project root. By the default it is `process.cwd()`.
+
+### `request`*
+
+User request.
+
+### `base`*
+
+The directory from which the request is made. 
 
 ### Examples:
 
