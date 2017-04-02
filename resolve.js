@@ -50,11 +50,11 @@ function replace(str, placeholders) {
 *
 * @return {Promise}
 */
-function resolveAsync(p, base) {
+function resolveAsync(p, base, root) {
   if (!path.isAbsolute(p)) {
     return new Promise(function(r, j) {
       resolve(forceRelative(p), {
-        basedir: base
+        basedir: path.resolve(root, base)
       }, function(err, res) {
         if (err) {
           j(err);
@@ -72,9 +72,9 @@ function resolveAsync(p, base) {
 /**
 * Simple resolve path (usign path.resolve)
 */
-function resolveSync(p, base) {
+function resolveSync(p, base, root) {
   if (!path.isAbsolute(p)) {
-    p = path.resolve(base, p);
+    p = path.resolve(path.resolve(root, base), p);
   }
   return p;
 }
@@ -93,7 +93,7 @@ function object(pairs) {
 */
 function matchToHolders(match, tag) {
   return object(match.map(function(val, index) {
-    return ["<"+tag+":$"+index+">", val];
+    return ["<"+tag+":"+index+">", val];
   }));
 }
 /**
@@ -159,6 +159,12 @@ function pickSecond(item) {
 function defaultResolver(id, base) {
   return path.resolve(base, id);
 }
+/**
+ * Resolve substituter
+ *
+ * @param  {array|object} rules
+ * @param  {type} options
+ */
 module.exports = function resolveSub(rules, options) {
   /**
    * `importOptions`
@@ -209,7 +215,7 @@ module.exports = function resolveSub(rules, options) {
     "<request>": request,
     "<root>": root,
     "<base>": base,
-    "<id>": path.parse(request).name,
+    "<id>": path.parse(request).base,
     "<basename>": basename,
   };
   /**
@@ -271,11 +277,12 @@ module.exports = function resolveSub(rules, options) {
         ? replace(rule.use.request, placeholders)
         : request;
       const customBase = rule.use.base
-        ? replace(rule.path, placeholders)
+        ? replace(rule.use.base, placeholders)
         : base;
       return resolveAsync(
         customRequest,
-        customBase !== base ? resolveSync(customBase, base) : customBase
+        customBase !== base ? resolveSync(customBase, base, root) : customBase,
+        root
       )
       .then(function(file) {
         return [file, rule];
@@ -304,15 +311,17 @@ module.exports = function resolveSub(rules, options) {
     * On fail we must check for use resolve function to execute it
     */
     if (userResolve) {
-      return userResolve(request, base, importOptions);
+      const userResult = userResolve(request, base, importOptions);
+      return userResult instanceof Array
+        ? userResult : [userResult];
     }
     /**
     * On total fail just returns id, original engine will decide what to do.
     */
-    return request;
+    return [request];
   })
   .catch(function(e) {
-    console.log(e);
-    return request;
+    console.warn(e);
+    return [request];
   });
 }
