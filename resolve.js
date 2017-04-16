@@ -111,14 +111,14 @@ function filterValidRule(rule) {
 * Merge with defaults
 */
 function mapDefaults(rule) {
-  return {
+  return Object.assign({}, rule, {
     match: Object.assign({
-      id: defaultExpr,
+      request: defaultExpr,
       base: defaultExpr,
       module: defaultExpr
     }, rule.match),
     use: rule.use,
-  };
+  });
 }
 /**
 * Select only rules witj extend property
