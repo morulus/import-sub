@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var resolve = require('resolve');
 var path = require('path');
+
 const defaultExpr = /.*/i;
 /**
 * Kick empty sufix
@@ -167,6 +168,15 @@ function defaultResolver(id, base) {
  */
 module.exports = function resolveSub(rules, options) {
   /**
+   * Explanation
+   */
+  const explain = typeof options.explain === 'function'
+    ? options.explain : false;
+  /**
+   * Log
+   */
+  const log = options.log || console.log;
+  /**
    * `importOptions`
    * Backward compatibility with postcss-import
    */
@@ -218,10 +228,22 @@ module.exports = function resolveSub(rules, options) {
     "<id>": path.parse(request).base,
     "<basename>": basename,
   };
+  /* Exaplanation */
+  if (explain) {
+    explain('');
+    explain('Import-sub info:');
+    Object.keys(placeholders).forEach(function(key) {
+      explain(key + ': '+ placeholders[key]);
+    })
+    explain('');
+  }
   /**
    * For best performance resolve module right now (only if needed)
    */
-  return (isModuleRequired ? originalResolve(request, base, importOptions) : Promise.resolve(''))
+  return (isModuleRequired
+      ? originalResolve(request, base, importOptions)
+      : Promise.resolve('')
+  )
   .then(function(module) {
     /**
      * Flow rules

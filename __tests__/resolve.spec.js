@@ -207,4 +207,32 @@ describe('Match by request', function() {
       expect(result[0]).toBe('/xxx/custom/components/Button/style.css');
     });
   });
+
+  it('Exaplain', function() {
+    const logStat = [];
+    const explainLog = jest.fn(function relog(message) {
+      logStat.push(message);
+    });
+    return resolve([
+      {
+        match: {
+          base: /components\/([\w]*)$/i,
+          request: /\.\/([\w]*)\.css/i
+        },
+        use: {
+          base: '<root>/custom/components/<base:1>/',
+          request: './<request:1>.css'
+        }
+      }
+    ], {
+      base: 'components/Button/',
+      request: './style.css',
+      root: '/xxx/',
+      explain: explainLog
+    })
+    .then(function(result) {
+      expect(explainLog).toHaveBeenCalled();
+      expect(logStat).toMatchObject(["", "Import-sub info:", "~: /xxx/", "<request>: ./style.css", "<root>: /xxx/", "<base>: components/Button", "<id>: style.css", "<basename>: Button", ""]);
+    });
+  });
 });
