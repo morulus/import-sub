@@ -89,6 +89,20 @@ User request.
 
 The directory from which the request is made.
 
+### `explain` _(function)_
+
+Allows you to specify log function, which will be accept all verbose explanation.
+
+## `strict` _(bool)_
+
+If _true_ throws an error if path, returned by redirection, does not exist.
+
+```js
+importSub({}, {
+  explain: console.log
+})
+```
+
 ### Examples:
 
 We need to substitute required file `./bar.js` from `src/foo` to `../../custom/foo/bar.js`.
@@ -229,6 +243,5 @@ https://morulus.github.io/
 
 # Implementations
 
-- [postcss-import-sub](https://github.com/morulus/postcss-import-sub) (Deprecated)
-- [postcss-import-sub](https://github.com/morulus/postcss-redirect-import)
+- [postcss-redirect-import](https://github.com/morulus/postcss-redirect-import)
 - [webpack-import-sub-plugin](https://github.com/morulus/webpack-import-sub-plugin)

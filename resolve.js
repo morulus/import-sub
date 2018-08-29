@@ -409,7 +409,10 @@ module.exports = function resolveSub(rules, options) {
       );
       return (isAppendModule ? [module] : []).concat(existsFiles.map(pickFirst));
     } else {
-      throw new Error('Redirected path is not found');
+      if (options.strict) {
+        console.log('options', options)
+        throw new Error('Redirected2 path is not found');
+      }
     }
     /**
     * On fail we must check for use resolve function to execute it

@@ -232,7 +232,7 @@ describe('Match by request', function() {
     })
     .then(function(result) {
       expect(explainLog).toHaveBeenCalled();
-      expect(logStat).toMatchObject(["", "Import-sub info:", "~: /xxx/", "<request>: ./style.css", "<root>: /xxx/", "<base>: components/Button", "<id>: style.css", "<basename>: Button", ""]);
+      expect(logStat).toMatchObject(["", "Import redirect:", "request: ./style.css", "root: /xxx/", "base: components/Button", "id: style.css", "basename: Button", ""]);
     });
   });
 });
