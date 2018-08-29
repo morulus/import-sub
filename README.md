@@ -87,7 +87,7 @@ User request.
 
 ### `base`*
 
-The directory from which the request is made. 
+The directory from which the request is made.
 
 ### Examples:
 
@@ -176,11 +176,48 @@ Then the custom placeholder will get the hash `<request:1>`. If there were more 
 
 You probably already guessed that such capturing groups in the `base` will create the placeholders `<base:1>`, `<base:2>`, etc.
 
+#### Use function
+
+You are allowed to define property `use` as a function. In this case, you may implement the custom logic of path generation.
+
+```js
+{
+  match: {
+    request: /theme\.css$/i
+  },
+  use: (data) => {
+    return path.join(data.base, 'themes/default.css')
+  },
+}
+```
+
+The function accepts an object with comprehensive information about the requested file.
+
+```js
+{
+  use: ({
+    root, // Project root
+    base: // Base path
+    id, // User request
+    basename, // Name of folder, file required from
+  }) => {}
+}
+```
+
+Also, it contains all matched regex patterns if you have passed them to `request` or `base`.
+
 # Benefits
 
 In the field of customization of styles, the method provides a whole set of advantages.
 
 ![Compare style customizing ways](./assets/compare-customizing-ways.png)
+
+# Features
+
+## 1.1.0
+- Support property `use` to be a function
+- Accept rules as object, not only array
+- Support multiple results, builded by function `use`
 
 # Author
 
@@ -192,5 +229,6 @@ https://morulus.github.io/
 
 # Implementations
 
-- [postcss-import-sub](https://github.com/morulus/postcss-import-sub)
+- [postcss-import-sub](https://github.com/morulus/postcss-import-sub) (Deprecated)
+- [postcss-import-sub](https://github.com/morulus/postcss-redirect-import)
 - [webpack-import-sub-plugin](https://github.com/morulus/webpack-import-sub-plugin)

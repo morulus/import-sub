@@ -11,6 +11,29 @@ function kickEmptySufix(segment, index, all) {
   return index !== all.length - 1 || segment;
 }
 /**
+ * Check Array
+ */
+function isArray(arrayLike) {
+  return typeof arrayLike === 'object'
+    && arrayLike instanceof Array
+}
+/**
+ * Flatten Array
+ */
+function flatten(array) {
+  const result = [];
+  for (let i = 0; i < array.length; i++) {
+    if (isArray(array[i])) {
+      for (let q = 0; q < array[i].length; q++) {
+        result.push(array[i][q]);
+      }
+    } else {
+      result.push(array[i]);
+    }
+  }
+  return result
+}
+/**
 * - Replace slashes to unix style
 * - Remove trailing slash.
 */
@@ -38,13 +61,17 @@ function forceRelative(p) {
 /**
 * Simple replace string with key:value in placeholders
 */
-function replace(str, placeholders) {
+function replace(pattern, placeholders) {
+  /* Support function pattern */
+  if (typeof pattern === 'function') {
+    return pattern(placeholders)
+  }
   for (let prop in placeholders) {
     if (placeholders.hasOwnProperty(prop)) {
-      str = str.replace(prop, placeholders[prop]);
+      pattern = pattern.replace(prop, placeholders[prop]);
     }
   }
-  return str;
+  return pattern;
 }
 /**
 * Resolve path the same way ans postcss-import
@@ -94,15 +121,18 @@ function object(pairs) {
 */
 function matchToHolders(match, tag) {
   return object(match.map(function(val, index) {
-    return ["<"+tag+":"+index+">", val];
+    return [tag+":"+index, val];
   }));
 }
 /**
-* Filter rules with `to` prop
+* Filter rules with `use` prop
 */
 function filterValidRule(rule) {
   return (rule.hasOwnProperty('match')&&typeof rule.match === "object")
-  && (rule.hasOwnProperty('use')&&typeof rule.use === "object")
+  && (rule.hasOwnProperty('use') && (
+    typeof rule.use === "object"
+    || typeof rule.use === "function"
+  ))
   && (
     (rule.match.hasOwnProperty('request'))
     || (rule.match.hasOwnProperty('base'))
@@ -121,6 +151,20 @@ function mapDefaults(rule) {
     use: rule.use,
   });
 }
+/**
+ * Wrap placeholders with scobes
+ */
+function wrapPlaceholders(placeholders) {
+  const keys = Object.keys(placeholders);
+  const wrappedPlaceholders = {};
+
+  for (let i = 0; i < keys.length; i++) {
+    wrappedPlaceholders['<'+keys[i]+'>'] = placeholders[keys[i]];
+  }
+
+  return wrappedPlaceholders;
+}
+
 /**
 * Select only rules witj extend property
 */
@@ -167,6 +211,14 @@ function defaultResolver(id, base) {
  * @param  {type} options
  */
 module.exports = function resolveSub(rules, options) {
+  if (typeof rules !== 'object') {
+    throw new TypeError('PostCss redirect import expects rules to be array or object')
+  }
+
+  /* Rules must be an array always */
+  rules = isArray(rules)
+    ? rules
+    : [rules];
   /**
    * Explanation
    */
@@ -221,17 +273,16 @@ module.exports = function resolveSub(rules, options) {
    * Placeholders
    */
   const placeholders = {
-    "~": root,
-    "<request>": request,
-    "<root>": root,
-    "<base>": base,
-    "<id>": path.parse(request).base,
-    "<basename>": basename,
+    "request": request,
+    "root": root,
+    "base": base,
+    "id": path.parse(request).base,
+    "basename": basename,
   };
   /* Exaplanation */
   if (explain) {
     explain('');
-    explain('Import-sub info:');
+    explain('Import redirect:');
     Object.keys(placeholders).forEach(function(key) {
       explain(key + ': '+ placeholders[key]);
     })
@@ -292,26 +343,55 @@ module.exports = function resolveSub(rules, options) {
           Object.assign(placeholders, matchToHolders(matchModule, 'module'));
         }
       }
-      /**
-       * Parse aliases and resolve final path
-       */
-      const customRequest = rule.use.request
-        ? replace(rule.use.request, placeholders)
-        : request;
-      const customBase = rule.use.base
-        ? replace(rule.use.base, placeholders)
-        : base;
-      return resolveAsync(
-        customRequest,
-        customBase !== base ? resolveSync(customBase, base, root) : customBase,
-        root
+
+      /* Prepare placeholders to use with pattern */
+      const wrappedPlaceholders = Object.assign(
+        {
+          ['~']: root,
+        },
+        wrapPlaceholders(placeholders)
       )
-      .then(function(file) {
-        return [file, rule];
-      });
+
+      if (typeof rule.use === 'function') {
+        const customPath = rule.use(placeholders, replace);
+
+        /* Convert into an array */
+        const customPaths = isArray(customPath)
+          ? customPath
+          : [customPath];
+
+        return Promise.all(customPaths.map(function (cp) {
+          return resolveAsync(
+            cp,
+            base,
+            root
+          ).then(function(file) {
+            return [file, rule];
+          })
+        }));
+      } else if (typeof rule.use === 'object') {
+        /**
+         * Parse aliases and resolve final path
+         */
+        const customRequest = rule.use.request
+          ? replace(rule.use.request, wrappedPlaceholders)
+          : request;
+        const customBase = rule.use.base
+          ? replace(rule.use.base, wrappedPlaceholders)
+          : base;
+        return resolveAsync(
+          customRequest,
+          customBase !== base ? resolveSync(customBase, base, root) : customBase,
+          root
+        ).then(function(file) {
+          return [[file, rule]];
+        });
+      } else {
+        throw new TypeError('import-sub expects property `use` to be an object or a function')
+      }
     }))
     .then(function(files) {
-      return [files, parcle[1]];
+      return [flatten(files), parcle[1]];
     });
   })
   .then(function(parcle) {
@@ -328,6 +408,8 @@ module.exports = function resolveSub(rules, options) {
         .filter(ruleCheckAppend).length>0
       );
       return (isAppendModule ? [module] : []).concat(existsFiles.map(pickFirst));
+    } else {
+      throw new Error('Redirected path is not found');
     }
     /**
     * On fail we must check for use resolve function to execute it
