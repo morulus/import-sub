@@ -211,10 +211,13 @@ The function accepts an object with comprehensive information about the requeste
 {
   use: ({
     root, // Project root
-    base: // Base path
-    id, // User request
+    base, // Base path
+    request, // Use request
+    id, // id
     basename, // Name of folder, file required from
-  }) => {}
+  }) => {
+    return `custom/path/to/${id}`
+  }
 }
 ```
 
