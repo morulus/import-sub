@@ -1,6 +1,6 @@
 {
   "name": "import-sub",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Import substituton core",
   "main": "resolve.js",
   "scripts": {
@@ -12,7 +12,9 @@
   },
   "keywords": [
     "import",
-    "substitution"
+    "substitution",
+    "redirect",
+    "alias"
   ],
   "author": "Vladimir Kalmykov <vladimirmorulus@gmail.com>",
   "license": "MIT",
